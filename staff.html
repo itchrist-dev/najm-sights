@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Najm Sights - Staff</title>
+<style>
+body{font-family:Arial,sans-serif;background:#F5F7F8;color:#1A2330;margin:0;line-height:1.6}
+header{background:#13283B;color:#D9A441;padding:14px 20px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+header a{color:#E8EEF2;font-weight:normal;font-size:.9rem}
+main{max-width:1100px;margin:0 auto;padding:20px}
+#loginbox{max-width:480px;margin:20px auto}
+.box{background:#fff;border:1px solid #D7DEE3;border-radius:8px;padding:18px;margin-bottom:20px}
+h2{margin-top:0;color:#13283B;font-size:1.2rem}
+label{display:block;font-weight:bold;margin-top:12px}
+input,textarea{width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid #9AA9B5;border-radius:6px}
+textarea{min-height:90px}
+button{background:#D9A441;color:#13283B;border:0;font:inherit;font-weight:bold;padding:10px 20px;border-radius:6px;cursor:pointer;margin-top:14px}
+button.del{background:#B3402F;color:#fff;margin:0;padding:6px 12px}
+.item{border-bottom:1px solid #D7DEE3;padding:10px 0;white-space:pre-line}
+.item small{color:#5B6B78;display:block}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.msg{color:#1E7B6E;font-weight:bold}
+#dash{display:none}
+.sec{display:none}
+.layout{display:flex;gap:20px;align-items:flex-start}
+#side{width:220px;flex-shrink:0;background:#13283B;border-radius:8px;padding:10px;position:sticky;top:10px}
+#side a{display:block;color:#E8EEF2;text-decoration:none;padding:10px 12px;border-radius:6px;margin-bottom:4px;cursor:pointer}
+#side a:hover{background:#1F3A52}
+#side a.on{background:#D9A441;color:#13283B;font-weight:bold}
+.content{flex:1;min-width:0}
+@media(max-width:700px){.layout{flex-direction:column}#side{width:100%;box-sizing:border-box;position:static;display:flex;flex-wrap:wrap;gap:4px}#side a{margin:0}}
+</style>
+</head>
+<body>
+<header>
+  <span>Najm Sights TV - Staff</span>
+  <span><span id="who"></span> <button id="logout" style="display:none;margin:0;padding:5px 12px" onclick="logout()">Log out</button> <a href="index.html">Back to website</a></span>
+</header>
+<main>
+
+<!-- LOGIN -->
+<div class="box" id="loginbox">
+  <h2>Login</h2>
+  <label for="em">Email</label>
+  <input type="email" id="em">
+  <label for="pw">Password</label>
+  <input type="password" id="pw">
+  <button onclick="login()">Login</button>
+  <p class="msg" id="lmsg"></p>
+</div>
+
+<div id="dash">
+<div class="layout">
+<nav id="side"></nav>
+<div class="content">
+
+  <!-- REPORTER ONLY -->
+  <div class="box sec" id="s_report">
+    <h2>Daily report</h2>
+    <label for="r_date">Date</label>
+    <input type="date" id="r_date">
+    <label for="r_n">How many videos did you shoot/upload today?</label>
+    <input type="number" id="r_n" value="0" min="0">
+    <label for="r_s">What did you do today?</label>
+    <textarea id="r_s"></textarea>
+    <button onclick="sendReport()">Send report</button>
+    <p class="msg" id="rmsg"></p>
+  </div>
+
+  <div class="box sec" id="s_notice">
+    <h2>Tell the admin before you upload</h2>
+    <p>This saves a notice and sends an email to your brother automatically.</p>
+    <label for="n_t">Video title</label>
+    <input type="text" id="n_t">
+    <label for="n_x">Note (optional)</label>
+    <textarea id="n_x"></textarea>
+    <button onclick="sendNotice()">Send notice</button>
+    <p class="msg" id="nmsg"></p>
+  </div>
+
+  <!-- ADMIN ONLY -->
+  <div class="box sec" id="s_notices">
+    <h2>Upload notices</h2>
+    <div id="nlist"></div>
+  </div>
+
+  <div class="box sec" id="s_reports">
+    <h2>Daily reports</h2>
+    <div id="rlist"></div>
+  </div>
+
+  <!-- BOTH -->
+  <div class="box sec" id="s_post">
+    <h2>Write a news post</h2>
+    <label for="date">Date</label>
+    <input type="date" id="date">
+    <label for="t_rw">Title (Kinyarwanda)</label>
+    <input type="text" id="t_rw">
+    <label for="x_rw">Text (Kinyarwanda)</label>
+    <textarea id="x_rw"></textarea>
+    <label for="t_en">Title (English)</label>
+    <input type="text" id="t_en">
+    <label for="x_en">Text (English)</label>
+    <textarea id="x_en"></textarea>
+    <label for="t_ar">Title (Arabic)</label>
+    <input type="text" id="t_ar" dir="rtl">
+    <label for="x_ar">Text (Arabic)</label>
+    <textarea id="x_ar" dir="rtl"></textarea>
+    <button onclick="addPost()">Publish post</button>
+    <p class="msg" id="pmsg"></p>
+  </div>
+
+  <div class="box sec" id="s_plist">
+    <h2>Posts on the website</h2>
+    <div id="plist"></div>
+  </div>
+
+</div>
+</div>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+// ---- PUT YOUR KEYS HERE ----
+var SUPABASE_URL = "https://rfmcagvvfqaiynnmxpgu.supabase.co";
+var SUPABASE_KEY = "sb_publishable_I31BEMhcLFNvchKPy4FAXw_30hIWSTo";
+var WEB3FORMS_KEY = "PASTE_WEB3FORMS_KEY_HERE"; // must be created with your brother's email
+// ----------------------------
+
+var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var me = null;      // logged in user
+var role = "";      // reporter or admin
+
+function show(cls, yes) {
+  var els = document.getElementsByClassName(cls);
+  for (var i = 0; i < els.length; i++) {
+    els[i].style.display = yes ? "block" : "none";
+  }
+}
+
+function showSec(id) {
+  var secs = document.getElementsByClassName("sec");
+  for (var i = 0; i < secs.length; i++) {
+    secs[i].style.display = (secs[i].id == id) ? "block" : "none";
+  }
+  var links = document.querySelectorAll("#side a");
+  for (var j = 0; j < links.length; j++) {
+    links[j].className = (links[j].getAttribute("data-s") == id) ? "on" : "";
+  }
+}
+
+function buildNav() {
+  var items = [];
+  if (role == "admin") {
+    items.push(["s_reports", "Daily reports"]);
+    items.push(["s_notices", "Upload notices"]);
+  } else {
+    items.push(["s_report", "Daily report"]);
+    items.push(["s_notice", "Tell admin"]);
+  }
+  items.push(["s_post", "New post"]);
+  items.push(["s_plist", "Posts on website"]);
+  var side = document.getElementById("side");
+  side.innerHTML = "";
+  for (var i = 0; i < items.length; i++) {
+    var a = document.createElement("a");
+    a.textContent = items[i][1];
+    a.setAttribute("data-s", items[i][0]);
+    a.onclick = function () { showSec(this.getAttribute("data-s")); };
+    side.appendChild(a);
+  }
+  showSec(items[0][0]);
+}
+
+function login() {
+  var msg = document.getElementById("lmsg");
+  msg.textContent = "Please wait...";
+  db.auth.signInWithPassword({
+    email: document.getElementById("em").value,
+    password: document.getElementById("pw").value
+  }).then(function (res) {
+    if (res.error) { msg.textContent = "Error: " + res.error.message; return; }
+    msg.textContent = "";
+    start();
+  });
+}
+
+function logout() {
+  db.auth.signOut().then(function () { location.reload(); });
+}
+
+function start() {
+  db.auth.getUser().then(function (res) {
+    if (!res.data.user) { return; }
+    me = res.data.user;
+    db.from("profiles").select("*").eq("id", me.id).single().then(function (p) {
+      if (p.error || !p.data) { document.getElementById("lmsg").textContent = "No profile found for this user."; return; }
+      role = p.data.role;
+      document.getElementById("loginbox").style.display = "none";
+      document.getElementById("dash").style.display = "block";
+      document.getElementById("logout").style.display = "inline";
+      document.getElementById("who").textContent = me.email + " (" + role + ")";
+      buildNav();
+      document.getElementById("r_date").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+      loadPosts();
+      if (role == "admin") { loadReports(); loadNotices(); }
+    });
+  });
+}
+
+function sendReport() {
+  var msg = document.getElementById("rmsg");
+  var text = document.getElementById("r_s").value;
+  if (text == "") { msg.textContent = "Please write what you did."; return; }
+  db.from("reports").insert({
+    report_date: document.getElementById("r_date").value,
+    videos_done: document.getElementById("r_n").value,
+    summary: text
+  }).then(function (res) {
+    if (res.error) { msg.textContent = "Error: " + res.error.message; return; }
+    msg.textContent = "Report sent. Thank you.";
+    document.getElementById("r_s").value = "";
+  });
+}
+
+function sendNotice() {
+  var msg = document.getElementById("nmsg");
+  var title = document.getElementById("n_t").value;
+  var note = document.getElementById("n_x").value;
+  if (title == "") { msg.textContent = "Please write the video title."; return; }
+  db.from("notices").insert({ title: title, note: note }).then(function (res) {
+    if (res.error) { msg.textContent = "Error: " + res.error.message; return; }
+    // send the email to the admin
+    fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        access_key: WEB3FORMS_KEY,
+        subject: "Najm Sights: new video about to be uploaded",
+        name: me.email,
+        message: "Video title: " + title + "\n\nNote: " + note
+      })
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      msg.textContent = j.success ? "Notice saved and email sent." : "Notice saved, but the email failed.";
+    }).catch(function () { msg.textContent = "Notice saved, but the email failed."; });
+    document.getElementById("n_t").value = "";
+    document.getElementById("n_x").value = "";
+  });
+}
+
+function loadReports() {
+  db.from("reports").select("*").order("created_at", { ascending: false }).limit(50)
+    .then(function (res) {
+      var box = document.getElementById("rlist");
+      box.innerHTML = "";
+      if (res.error || res.data.length == 0) { box.textContent = "No reports yet."; return; }
+      for (var i = 0; i < res.data.length; i++) {
+        var r = res.data[i];
+        var d = document.createElement("div");
+        d.className = "item";
+        var s = document.createElement("small");
+        s.textContent = r.report_date + " - videos: " + r.videos_done;
+        d.appendChild(s);
+        d.appendChild(document.createTextNode(r.summary));
+        box.appendChild(d);
+      }
+    });
+}
+
+function loadNotices() {
+  db.from("notices").select("*").order("created_at", { ascending: false }).limit(30)
+    .then(function (res) {
+      var box = document.getElementById("nlist");
+      box.innerHTML = "";
+      if (res.error || res.data.length == 0) { box.textContent = "No notices yet."; return; }
+      for (var i = 0; i < res.data.length; i++) {
+        var n = res.data[i];
+        var d = document.createElement("div");
+        d.className = "item";
+        var s = document.createElement("small");
+        s.textContent = new Date(n.created_at).toLocaleString();
+        var b = document.createElement("b");
+        b.textContent = n.title;
+        d.appendChild(s);
+        d.appendChild(b);
+        d.appendChild(document.createTextNode("\n" + (n.note || "")));
+        box.appendChild(d);
+      }
+    });
+}
+
+function addPost() {
+  var msg = document.getElementById("pmsg");
+  var p = {
+    post_date: document.getElementById("date").value,
+    rw_title: document.getElementById("t_rw").value, rw_text: document.getElementById("x_rw").value,
+    en_title: document.getElementById("t_en").value, en_text: document.getElementById("x_en").value,
+    ar_title: document.getElementById("t_ar").value, ar_text: document.getElementById("x_ar").value
+  };
+  if (!p.rw_title && !p.en_title && !p.ar_title) { msg.textContent = "Please write at least one title."; return; }
+  db.from("posts").insert(p).then(function (res) {
+    if (res.error) { msg.textContent = "Error: " + res.error.message; return; }
+    msg.textContent = "Published. It is now on the website.";
+    var ids = ["t_rw", "x_rw", "t_en", "x_en", "t_ar", "x_ar"];
+    for (var i = 0; i < ids.length; i++) { document.getElementById(ids[i]).value = ""; }
+    loadPosts();
+  });
+}
+
+function loadPosts() {
+  db.from("posts").select("*").order("post_date", { ascending: false }).order("id", { ascending: false })
+    .then(function (res) {
+      var box = document.getElementById("plist");
+      box.innerHTML = "";
+      if (res.error || res.data.length == 0) { box.textContent = "No posts yet."; return; }
+      for (var i = 0; i < res.data.length; i++) {
+        var r = res.data[i];
+        var d = document.createElement("div");
+        d.className = "item row";
+        var span = document.createElement("span");
+        span.textContent = r.post_date + " - " + (r.en_title || r.rw_title || r.ar_title);
+        var b = document.createElement("button");
+        b.className = "del";
+        b.textContent = "Delete";
+        b.setAttribute("data-id", r.id);
+        b.onclick = function () { deletePost(this.getAttribute("data-id")); };
+        d.appendChild(span);
+        d.appendChild(b);
+        box.appendChild(d);
+      }
+    });
+}
+
+function deletePost(id) {
+  if (confirm("Delete this post?")) {
+    db.from("posts").delete().eq("id", id).then(function () { loadPosts(); });
+  }
+}
+
+// already logged in from before?
+db.auth.getSession().then(function (res) {
+  if (res.data.session) { start(); }
+});
+</script>
+</body>
+</html>
