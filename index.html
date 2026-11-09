@@ -164,12 +164,15 @@ footer{text-align:center;padding:28px 20px;color:#5B6B78;font-size:.9rem}
   </div>
 </section>
 
-<footer>© 2026 Najm Sights TV</footer>
+<footer>© 2026 Najm Sights TV · <a href="staff.html" data-i="staff"></a></footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
+var SUPABASE_URL = "https://rfmcagvvfqaiynnmxpgu.supabase.co";
+var SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
 var T = {
   rw: {
-    nav_about:"Abo turi bo", nav_topics:"Ibyo twigisha", nav_videos:"Amashusho", nav_contact:"Twandikire",
+    staff:"Kwinjira (abakozi)", nav_about:"Abo turi bo", nav_topics:"Ibyo twigisha", nav_videos:"Amashusho", nav_contact:"Twandikire",
     nav_news:"Amakuru", news_h:"Amakuru n’inyigisho", f_name:"Amazina yawe", f_email:"Imeri yawe", f_msg:"Ubutumwa", f_send:"Ohereza", f_ok:"Murakoze! Ubutumwa bwawe bwoherejwe.", f_err:"Ntibyashobotse. Ongera ugerageze.",
     videos_h:"Amashusho aheruka", videos_p:"Reba ibiganiro n’inyigisho bishya.",
     bismillah:"Mu izina rya Allah, Nyirimpuhwe, Nyirimbabazi",
@@ -186,7 +189,7 @@ var T = {
     phone:"Telefone", email:"Imeri"
   },
   en: {
-    nav_about:"About", nav_topics:"Topics", nav_videos:"Videos", nav_contact:"Contact",
+    staff:"Staff login", nav_about:"About", nav_topics:"Topics", nav_videos:"Videos", nav_contact:"Contact",
     nav_news:"News", news_h:"News and lessons", f_name:"Your name", f_email:"Your email", f_msg:"Message", f_send:"Send", f_ok:"Thank you! Your message was sent.", f_err:"Something went wrong. Please try again.",
     videos_h:"Latest videos", videos_p:"Watch our newest talks and lessons.",
     bismillah:"In the name of Allah, the Most Gracious, the Most Merciful",
@@ -203,7 +206,7 @@ var T = {
     phone:"Phone", email:"Email"
   },
   ar: {
-    nav_about:"من نحن", nav_topics:"ما نقدّمه", nav_videos:"المرئيات", nav_contact:"تواصل معنا",
+    staff:"دخول الفريق", nav_about:"من نحن", nav_topics:"ما نقدّمه", nav_videos:"المرئيات", nav_contact:"تواصل معنا",
     nav_news:"الأخبار", news_h:"الأخبار والدروس", f_name:"الاسم", f_email:"البريد الإلكتروني", f_msg:"الرسالة", f_send:"إرسال", f_ok:"شكراً لك! تم إرسال رسالتك.", f_err:"حدث خطأ. حاول مرة أخرى.",
     videos_h:"أحدث المرئيات", videos_p:"شاهد أحدث المحاضرات والدروس.",
     bismillah:"",
@@ -267,10 +270,34 @@ function renderPosts() {
   document.getElementById("news").style.display = box.children.length ? "" : "none";
 }
 
-fetch("posts.json")
-  .then(function (r) { return r.json(); })
-  .then(function (data) { posts = data; renderPosts(); })
-  .catch(function () { renderPosts(); });
+function loadPosts() {
+  var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  db.from("posts").select("*").order("post_date", { ascending: false }).order("id", { ascending: false })
+    .then(function (res) {
+      if (res.error) { loadOldPosts(); return; }
+      posts = [];
+      for (var i = 0; i < res.data.length; i++) {
+        var r = res.data[i];
+        posts.push({
+          date: r.post_date,
+          rw: { title: r.rw_title, text: r.rw_text },
+          en: { title: r.en_title, text: r.en_text },
+          ar: { title: r.ar_title, text: r.ar_text }
+        });
+      }
+      renderPosts();
+    })
+    .catch(function () { loadOldPosts(); });
+}
+
+function loadOldPosts() {
+  fetch("posts.json")
+    .then(function (r) { return r.json(); })
+    .then(function (data) { posts = data; renderPosts(); })
+    .catch(function () { renderPosts(); });
+}
+
+loadPosts();
 
 document.getElementById("cform").addEventListener("submit", function (e) {
   e.preventDefault();
